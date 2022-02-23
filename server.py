@@ -10,6 +10,7 @@ port = 8080
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
 server.listen()  # listen for incoming connections
+print("Server is listening...")
 
 # Listen for Clients and their Nicknames
 clients = []
