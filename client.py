@@ -4,7 +4,7 @@ import threading
 # Choosing Nickname
 nickname = input("Choose your nickname: ")
 if nickname == 'admin':
-    password = input("Enter admin password")
+    password = input("Enter admin password:")
 
 
 # Connecting To Server
@@ -34,6 +34,10 @@ def receive():
                     if client.recv(1024).decode('ascii') == 'REFUSE':
                         print("Connection refused. Wrong password.")
                         stop_thread = True  # Stop the thread
+                elif next_message == 'BAN':
+                    print("Connection refused because of ban")
+                    client.close()
+                    stop_thread = True
             else:
                 print(message)
         except:

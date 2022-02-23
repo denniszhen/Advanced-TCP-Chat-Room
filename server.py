@@ -23,16 +23,31 @@ def broadcast(message):
     for client in clients:
         client.send(message)
 
-# Handling messages from clients
-
-
 # Handling Messages From Clients
+
+
 def handle(client):
     while True:
         try:
             # Broadcasting Messages
-            message = client.recv(1024)
-            broadcast(message)
+            msg = message = client.recv(1024)
+            if msg.decode('ascii').startswith('KICK'):
+                if nicknames[client.index(client)] == 'admin':
+                    name_to_kick = msg.decode('ascii')[5:]
+                    kick_user(name_to_kick)
+                else:
+                    client.send('Command was refused.'.encode('ascii'))
+            elif msg.decode('ascii').startswith('BAN'):
+                if nicknames[client.index(client)] == 'admin':
+                    name_to_ban = msg.decode('ascii')[4:]
+                    kick_user(name_to_ban)
+                    with open('bans.txt', 'a') as f:
+                        f.write(f'{name_to_ban}\n')
+                    print(f'{name_to_ban} was banned.')
+                else:
+                    client.send('Command was refused.'.encode('ascii'))
+            else:
+                broadcast(message)
         except:
             # Removing And Closing Clients
             index = clients.index(client)
@@ -55,6 +70,23 @@ def receive():
         # Request And Store Nickname
         client.send('NICK'.encode('ascii'))
         nickname = client.recv(1024).decode('ascii')
+
+        with open('bans.txt', 'r') as f:
+            bans = f.readlines()
+
+        if nickname+'\n' in bans:
+            client.send('BAN').encode('ascii')
+            client.close()
+
+        if nickname == 'admin':
+            client.send('PASS').encode('ascii')
+            password = client.recv(1024).decode('ascii')
+
+        if password != 'admin':
+            client.send('REFUSE').encode('ascii')
+            client.close()
+            continue  # don't break, just skip this loop since we have a sole thread for listening
+
         nicknames.append(nickname)
         clients.append(client)
 
@@ -66,6 +98,17 @@ def receive():
         # Start Handling Thread For Client
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
+
+
+def kick_user(user):
+    if user in nicknames:
+        name_index = nicknames.index(user)
+        client_to_kick = clients[name_index]
+        clients.remove(client_to_kick)
+        client_to_kick.send('You were kicked by an admin'.encode('ascii'))
+        client_to_kick.close()
+        nicknames.remove(user)
+        broadcast(f'{user} was kicked by an admin'.encode('ascii'))
 
 
 receive()
