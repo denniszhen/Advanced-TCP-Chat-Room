@@ -4,12 +4,14 @@ import threading
 # Choosing Nickname
 nickname = input("Choose your nickname: ")
 if nickname == 'admin':
-    password = input("Enter admin password:")
+    password = input("Enter admin password: ")
 
 
 # Connecting To Server
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('127.0.0.1', 8080))
+client.connect(('127.0.0.1', 55321))
+
+stop_thread = False
 
 # Listening to Server and Sending Nickname
 
@@ -53,19 +55,20 @@ def write():
     while True:
         if stop_thread:  # Break the write loop if the global stop_thread variable is true
             break
-        message = '{}: {}'.format(nickname, input(''))
+        message = f'{nickname}: {input("")}'
         # Escape the username, colon, and space to see if a command is being executed
-        if message[len(nickname)+2].startswith('/'):
+        if message[len(nickname)+2:].startswith('/'):
             if nickname == 'admin':  # if admin user
-                if message[len(nickname)+2].startswith('/kick'):  # if kick command is entered
+                # if kick command is entered
+                if message[len(nickname)+2:].startswith('/kick'):
                     # send kick command to the server
                     client.send(
-                        'KICK {message[len(nickname)+2+6]}'.encode('ascii'))
+                        f'KICK {message[len(nickname)+2+6:]}'.encode('ascii'))
                 # if ban command is entered
-                elif message[len(nickname)+2].startswith('/ban'):
+                elif message[len(nickname)+2:].startswith('/ban'):
                     # send ban command to the server
                     client.send(
-                        'BAN {message[len(nickname)+2+5]}'.encode('ascii'))
+                        f'BAN {message[len(nickname)+2+5:]}'.encode('ascii'))
             else:
                 # if command was entered by non-admin user
                 print("Commands can only be executed by admins")

@@ -3,7 +3,7 @@ import threading  # used for multithreading
 
 # Connection data
 host = '127.0.0.1'
-port = 8080
+port = 55321
 
 # Start the server
 # param1: use an internet socket, param2: use TCP
@@ -32,13 +32,13 @@ def handle(client):
             # Broadcasting Messages
             msg = message = client.recv(1024)
             if msg.decode('ascii').startswith('KICK'):
-                if nicknames[client.index(client)] == 'admin':
+                if nicknames[clients.index(client)] == 'admin':
                     name_to_kick = msg.decode('ascii')[5:]
                     kick_user(name_to_kick)
                 else:
                     client.send('Command was refused.'.encode('ascii'))
             elif msg.decode('ascii').startswith('BAN'):
-                if nicknames[client.index(client)] == 'admin':
+                if nicknames[clients.index(client)] == 'admin':
                     name_to_ban = msg.decode('ascii')[4:]
                     kick_user(name_to_ban)
                     with open('bans.txt', 'a') as f:
@@ -50,13 +50,14 @@ def handle(client):
                 broadcast(message)
         except:
             # Removing And Closing Clients
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            nickname = nicknames[index]
-            broadcast('{} left!'.format(nickname).encode('ascii'))
-            nicknames.remove(nickname)
-            break
+            if client in clients:
+                index = clients.index(client)
+                clients.remove(client)
+                client.close()
+                nickname = nicknames[index]
+                broadcast(f'{nickname} left the chat.'.encode('ascii'))
+                nicknames.remove(nickname)
+                break
 
 # Receiving / Listening Function
 
@@ -65,7 +66,7 @@ def receive():
     while True:
         # Accept Connection
         client, address = server.accept()
-        print("Connected with {}".format(str(address)))
+        print(f'Connected with {str(address)}')
 
         # Request And Store Nickname
         client.send('NICK'.encode('ascii'))
@@ -75,23 +76,24 @@ def receive():
             bans = f.readlines()
 
         if nickname+'\n' in bans:
-            client.send('BAN').encode('ascii')
+            client.send('BAN'.encode('ascii'))
             client.close()
+            continue
 
         if nickname == 'admin':
-            client.send('PASS').encode('ascii')
+            client.send('PASS'.encode('ascii'))
             password = client.recv(1024).decode('ascii')
 
-        if password != 'admin':
-            client.send('REFUSE').encode('ascii')
-            client.close()
-            continue  # don't break, just skip this loop since we have a sole thread for listening
+            if password != 'admin':
+                client.send('REFUSE'.encode('ascii'))
+                client.close()
+                continue  # don't break, just skip this loop since we have a sole thread for listening
 
         nicknames.append(nickname)
         clients.append(client)
 
         # Print And Broadcast Nickname
-        print("Nickname is {}".format(nickname))
+        print(f'Nickname is {nickname}')
         broadcast("{} joined!".format(nickname).encode('ascii'))
         client.send('Connected to server!'.encode('ascii'))
 
